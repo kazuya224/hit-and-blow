@@ -1,0 +1,11 @@
+{
+    "name": "hit-and-blow-server",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "ws": "^8.18.3"
+    },
+    "scripts": {
+        "dev": "node src/index.js"
+    }
+}
