@@ -1,45 +1,51 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+// client/src/hooks/useWebSocket.js
+import { useEffect, useRef, useState, useCallback } from "react";
 
-export function useWebSocket(url) {
+export function useWebSocket(url, onMessage) {
   const wsRef = useRef(null);
   const [connected, setConnected] = useState(false);
-  const [lastMsg, setLastMsg] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const ws = new WebSocket(url);
+    setError("");
+    setConnected(false);
+
+    let ws;
+    try {
+      ws = new WebSocket(url);
+    } catch (e) {
+      setError(String(e?.message ?? e));
+      return;
+    }
+
     wsRef.current = ws;
 
-    ws.onopen = () => {
-      setConnected(true);
-      setError(null);
+    ws.onopen = () => setConnected(true);
+    ws.onerror = () => {
+      setError("WebSocket error");
+      setConnected(false);
     };
+    ws.onclose = () => setConnected(false);
 
-    ws.onmessage = (e) => {
+    ws.onmessage = (ev) => {
       try {
-        setLastMsg(JSON.parse(e.data));
+        const msg = JSON.parse(ev.data);
+        onMessage?.(msg);
       } catch {
-        // ignore
+        // JSONじゃないなら無視
       }
     };
 
-    ws.onerror = () => setError("WebSocket error");
-    ws.onclose = () => setConnected(false);
-
     return () => {
-      try {
-        ws.close();
-      } catch {}
+      try { ws.close(); } catch {}
     };
-  }, [url]);
+  }, [url, onMessage]);
 
-  const send = useMemo(() => {
-    return (type, payload = {}) => {
-      const ws = wsRef.current;
-      if (!ws || ws.readyState !== 1) return; // OPEN
-      ws.send(JSON.stringify({ type, ...payload }));
-    };
+  const send = useCallback((type, payload = {}) => {
+    const msg = JSON.stringify({ type, ...payload });
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(msg);
   }, []);
 
-  return { connected, lastMsg, error, send };
+  return { connected, error, send };
 }

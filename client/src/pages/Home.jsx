@@ -1,39 +1,35 @@
 import { useEffect, useState } from "react";
 
-export default function Home({ connected, onCreate, onJoin }) {
+export default function Home({ connected, onCreate, onJoin,lastCreated }) {
   const [name, setName] = useState("Player");
   const [roomId, setRoomId] = useState("");
-  const [lastCreated, setLastCreated] = useState("");
+  const safeName = name?.trim() ? name.trim() : "Player";
 
   // サーバが roomId を返しても、今は Home がそれを受け取ってないので
   // ひとまず「Create後に表示したい」なら、App側で渡すのがベスト。
   // ただ今すぐは、Join用入力欄に手で入れる運用でもOK。
 
-  useEffect(() => {
-    // ここは将来的に props で roomId を受け取って setLastCreated する想定
-  }, []);
 
   return (
     <div style={styles.wrap}>
       <h1 style={styles.title}>Hit & Blow</h1>
 
       <div style={styles.card}>
-        <div style={styles.row}>
-          <label style={styles.label}>名前</label>
-          <input
-            style={styles.input}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
-          />
-        </div>
+        
 
         <div style={styles.sep} />
 
         <button
           style={styles.btn}
           disabled={!connected}
-          onClick={() => onCreate(name)}
+          onClick={() => {
+            console.log("[Home] Create clicked", {
+              safeName,
+              onCreateType: typeof onCreate,
+              connected,
+            });
+            onCreate?.(safeName);
+          }}
         >
           ルームを作成
         </button>
@@ -61,7 +57,7 @@ export default function Home({ connected, onCreate, onJoin }) {
           <button
             style={styles.btn2}
             disabled={!connected || !roomId}
-            onClick={() => onJoin(roomId, name)}
+            onClick={() => onJoin(roomId, safeName)}
           >
             参加
           </button>
