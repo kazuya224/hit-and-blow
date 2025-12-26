@@ -11,8 +11,7 @@ export function makeId(len = 6) {
   export function isValidCode(s) {
     return (
       typeof s === "string" &&
-      /^[0-9]{4}$/.test(s) &&
-      new Set(s.split("")).size === 4
+      /^[0-9]{4}$/.test(s) 
     );
   }
   

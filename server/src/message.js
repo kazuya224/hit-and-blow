@@ -7,13 +7,37 @@ import {
   getRoomByWs,
   setSecret,
   roomStateView,
-  broadcast,
   onLeave,
 } from "./room.js";
 
 function send(ws, type, payload = {}) {
   if (!ws || ws.readyState !== ws.OPEN) return;
   ws.send(JSON.stringify({ type, ...payload }));
+}
+
+// 既存broadcastがあるなら置き換え/中身を修正
+export function broadcast(room, msg) {
+  // room.players の各要素が { ws, index, ... } を持つ想定
+  room.players.forEach((p) => {
+    if (!p?.ws) return;
+
+    // ★ you が無いなら自動で付ける（各クライアントごとに違う値を入れられる）
+    const withYou =
+      msg && msg.you === undefined
+        ? { ...msg, you: p.index } // or p.ws.playerIndex でもOK
+        : msg;
+
+    p.ws.send(JSON.stringify(withYou));
+  });
+}
+
+function sendStateToRoom(room) {
+  room.players.forEach((p, idx) => {
+    send(p.ws, "state", {
+      state: roomStateView(room),
+      you: idx, // ← p.index ではなく idx
+    });
+  });
 }
 
 export function handleMessage(ws, msg) {
@@ -23,20 +47,21 @@ export function handleMessage(ws, msg) {
   if (type === "create_room") {
     const room = createRoom(ws, msg.name || "P1");
     send(ws, "room_created", { roomId: room.roomId });
-    send(ws, "state", { state: roomStateView(room) });
+    sendStateToRoom(room);
     return;
   }
+  
 
   // join_room
   if (type === "join_room") {
     const roomId = (msg.roomId || "").toString().toUpperCase();
     const res = joinRoom(ws, roomId, msg.name || "P2");
     if (!res.ok) return send(ws, "error", { message: res.message });
-
-    send(ws, "room_joined", { roomId });
-    broadcast(res.room, { type: "state", state: roomStateView(res.room) });
+  
+    sendStateToRoom(res.room);
     return;
   }
+  
 
   const room = getRoomByWs(ws);
   if (!room) return send(ws, "error", { message: "Not in a room" });
@@ -49,7 +74,7 @@ export function handleMessage(ws, msg) {
     const res = setSecret(ws, code);
     if (!res.ok) return send(ws, "error", { message: res.message });
 
-    broadcast(res.room, { type: "state", state: roomStateView(res.room) });
+    sendStateToRoom(res.room);
     return;
   }
 
@@ -76,15 +101,18 @@ export function handleMessage(ws, msg) {
       room.turnIndex = opponentIndex;
     }
 
-    broadcast(room, {
-      type: "guess_result",
-      by: ws.playerIndex,
-      guess,
-      hit,
-      blow,
-      winner,
-      state: roomStateView(room),
+    room.players.forEach((p) => {
+      send(p.ws, "guess_result", {
+        by: ws.playerIndex,
+        guess,
+        hit,
+        blow,
+        winner,
+        state: roomStateView(room),
+        you: p.index,
+      });
     });
+    
     return;
   }
 

@@ -3,9 +3,16 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 export function useWebSocket(url, onMessage) {
   const wsRef = useRef(null);
+  const onMessageRef = useRef(onMessage);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState("");
 
+  // ★最新のonMessageをrefに保持（WSは作り直さない）
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
+  // ★WSはurlが変わった時だけ作り直す
   useEffect(() => {
     setError("");
     setConnected(false);
@@ -30,16 +37,16 @@ export function useWebSocket(url, onMessage) {
     ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data);
-        onMessage?.(msg);
+        onMessageRef.current?.(msg); // ★ref経由で呼ぶ
       } catch {
-        // JSONじゃないなら無視
+        // ignore
       }
     };
 
     return () => {
       try { ws.close(); } catch {}
     };
-  }, [url, onMessage]);
+  }, [url]);
 
   const send = useCallback((type, payload = {}) => {
     const msg = JSON.stringify({ type, ...payload });
