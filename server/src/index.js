@@ -2,10 +2,15 @@
 import { WebSocketServer } from "ws";
 import { handleMessage } from "./message.js";
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("listening on", PORT);
+});
+
 const wss = new WebSocketServer({ port: PORT });
 
 console.log(`WebSocket server running: ws://localhost:${PORT}`);
+
 
 wss.on("connection", (ws) => {
   console.log("client connected");
