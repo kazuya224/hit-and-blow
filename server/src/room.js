@@ -11,6 +11,9 @@ export function createRoom(hostWs, name = "P1") {
     roomId,
     phase: "WAITING", // WAITING | READY | PLAYING | FINISHED
     turnIndex: 0,
+    winnerIndex: null,
+    finalTurn: false,
+    finalGuessIndex: null,
     players: [
       {
         ws: hostWs,
@@ -88,6 +91,9 @@ export function roomStateView(room) {
     roomId: room.roomId,
     phase: room.phase,
     turnIndex: room.turnIndex,
+    winnerIndex: room.winnerIndex,
+    finalTurn: room.finalTurn,
+    finalGuessIndex: room.finalGuessIndex,
     players: room.players.map((p, idx) => ({
       index: idx,
       name: p.name,

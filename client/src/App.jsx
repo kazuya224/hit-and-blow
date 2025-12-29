@@ -96,7 +96,7 @@ export default function App() {
     );
   }
 
-  if (phase === "PLAYING") {
+  if (phase === "PLAYING" || phase === "FINISHED") {
     return <Game state={roomState} you={you} send={send} onLeave={leave} />;
   }
 
