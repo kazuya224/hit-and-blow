@@ -1,22 +1,24 @@
 // server/src/index.js
+import http from "http";
 import { WebSocketServer } from "ws";
 import { handleMessage } from "./message.js";
 
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("listening on", PORT);
+
+// Render 対策：HTTPサーバを作って PORT を開ける
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("WebSocket server is running\n");
 });
 
-const wss = new WebSocketServer({ port: PORT });
-
-console.log(`WebSocket server running: ws://localhost:${PORT}`);
-
+// WebSocket を HTTP サーバに紐付ける
+const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
   console.log("client connected");
 
   ws.on("message", (data) => {
-    console.log("[WS recv]", data.toString()); // ← data を使う
+    console.log("[WS recv]", data.toString());
     try {
       const msg = JSON.parse(data.toString());
       handleMessage(ws, msg);
@@ -35,8 +37,11 @@ wss.on("connection", (ws) => {
     console.error("ws error:", err);
   });
 
-  // 接続確認用
   ws.send(JSON.stringify({ type: "hello" }));
+});
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("listening on", PORT);
 });
 
 process.on("uncaughtException", (e) => console.error("uncaughtException:", e));
