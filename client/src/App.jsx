@@ -6,7 +6,8 @@ import WaitingRoom from "./pages/WaitingRoom";
 import SecretInput from "./pages/SecretInput";
 import Game from "./pages/Game";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8080";
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8080/";
+
 
 export default function App() {
   const [roomState, setRoomState] = useState(null);
